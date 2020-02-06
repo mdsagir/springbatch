@@ -1,4 +1,4 @@
-package com.springbatch.basicio;
+package com.springbatch.basicio.config;
 
 import com.springbatch.basicio.model.Employee;
 import com.springbatch.basicio.processor.EmployeProcessor;
@@ -44,7 +44,7 @@ public class BatchConfig {
         FlatFileItemReader<Employee> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new FileSystemResource("src/main/resources/employees.csv"));
         flatFileItemReader.setName("CSV-Reader");
-      //  flatFileItemReader.setLinesToSkip(1); To skip first line
+      //  flatFileItemReader.setLinesToSkip(1); //To skip first line
         flatFileItemReader.setLineMapper(lineMapper());
         return flatFileItemReader;
     }
@@ -54,7 +54,7 @@ public class BatchConfig {
     public JdbcBatchItemWriter<Employee> employeeWriter() {
         JdbcBatchItemWriter<Employee> itemWriter = new JdbcBatchItemWriter<Employee>();
         itemWriter.setDataSource(dataSource);
-        itemWriter.setSql("insert into employee (employee_id, first_name, last_name, email, age) values (:employeeId, :firstName, :lastName, :email, :age)");
+        itemWriter.setSql("insert into employee (employeeId, firstName, lastName, email, age) values (:employeeId, :firstName, :lastName, :email, :age)");
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Employee>());
         return itemWriter;
     }
@@ -79,7 +79,7 @@ public class BatchConfig {
 
     @Bean
     public Job job() throws Exception{
-        return jobBuilderFactory.get("job")
+        return jobBuilderFactory.get("myFirstJob")
                 .incrementer(new RunIdIncrementer())
                 .flow(step())
                 .end()
@@ -88,7 +88,7 @@ public class BatchConfig {
 
     @Bean
     public Step step() throws Exception{
-        return stepBuilderFactory.get("step").<Employee,Employee>chunk(10)
+        return stepBuilderFactory.get("myFirstStep").<Employee,Employee>chunk(10)
                 .reader(employeeReader())
                 .processor(employeProcessor)
                 .writer(employeeWriter())

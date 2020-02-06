@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class BasicioApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(BasicioApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(BasicioApplication.class, args);
+    }
 }

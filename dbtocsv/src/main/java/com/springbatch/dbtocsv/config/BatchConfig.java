@@ -1,5 +1,6 @@
 package com.springbatch.dbtocsv.config;
 
+import com.springbatch.dbtocsv.mapper.EmployeeRowMapper;
 import com.springbatch.dbtocsv.model.Employee;
 import com.springbatch.dbtocsv.processor.EmployeProcessor;
 import org.springframework.batch.core.Job;
@@ -8,17 +9,22 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.ItemStreamReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
+import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
+import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
 import javax.sql.DataSource;
 
@@ -38,43 +44,36 @@ public class BatchConfig {
     @Autowired
     private DataSource dataSource;
 
+    private Resource outputResource = new FileSystemResource("/Users/sagir/Documents/springbatch/springbatch/dbtocsv/src/main/resources/employees.csv");
+
     @Bean
-    public FlatFileItemReader<Employee> employeeReader() throws Exception {
-        FlatFileItemReader<Employee> flatFileItemReader = new FlatFileItemReader<>();
-        flatFileItemReader.setResource(new FileSystemResource("src/main/resources/employees.csv"));
-        flatFileItemReader.setName("CSV-Reader");
-      //  flatFileItemReader.setLinesToSkip(1); //To skip first line
-        flatFileItemReader.setLineMapper(lineMapper());
-        return flatFileItemReader;
+    public ItemStreamReader<Employee> employeeDBReader() {
+        JdbcCursorItemReader<Employee> reader = new JdbcCursorItemReader<>();
+        reader.setDataSource(dataSource);
+        reader.setSql("select * from employee");
+        reader.setRowMapper(new EmployeeRowMapper());
+        return reader;
     }
 
 
     @Bean
-    public JdbcBatchItemWriter<Employee> employeeWriter() {
-        JdbcBatchItemWriter<Employee> itemWriter = new JdbcBatchItemWriter<Employee>();
-        itemWriter.setDataSource(dataSource);
-        itemWriter.setSql("insert into employee (employeeId, firstName, lastName, email, age) values (:employeeId, :firstName, :lastName, :email, :age)");
-        itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Employee>());
-        return itemWriter;
+    public ItemWriter<Employee> employeeFileWriter() throws Exception {
+        FlatFileItemWriter<Employee> writer = new FlatFileItemWriter<>();
+        writer.setResource(outputResource);
+        writer.setLineAggregator(new DelimitedLineAggregator<Employee>() {
+            {
+                setFieldExtractor(new BeanWrapperFieldExtractor<Employee>() {
+                    {
+                        setNames(new String[]{"employeeId", "firstName", "lastName", "email", "age"});
+                    }
+                });
+            }
+        });
+        writer.setShouldDeleteIfExists(true);
+        return writer;
     }
 
-    @Bean
-    public LineMapper<Employee> lineMapper() {
-        DefaultLineMapper<Employee> defaultLineMapper = new DefaultLineMapper<>();
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
 
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("employeeId", "firstName", "lastName", "email", "age");
-
-        BeanWrapperFieldSetMapper<Employee> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Employee.class);
-
-        defaultLineMapper.setLineTokenizer(lineTokenizer);
-        defaultLineMapper.setFieldSetMapper(fieldSetMapper);
-
-        return defaultLineMapper;
-    }
 
     @Bean
     public Job job() throws Exception{
@@ -88,9 +87,9 @@ public class BatchConfig {
     @Bean
     public Step step() throws Exception{
         return stepBuilderFactory.get("myFirstStep").<Employee,Employee>chunk(10)
-                .reader(employeeReader())
+                .reader(employeeDBReader())
                 .processor(employeProcessor)
-                .writer(employeeWriter())
+                .writer(employeeFileWriter())
                 .build();
     }
 }

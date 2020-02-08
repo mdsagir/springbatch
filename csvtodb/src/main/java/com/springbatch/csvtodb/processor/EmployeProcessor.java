@@ -1,6 +1,6 @@
-package com.springbatch.basicio.processor;
+package com.springbatch.csvtodb.processor;
 
-import com.springbatch.basicio.model.Employee;
+import com.springbatch.csvtodb.model.Employee;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 

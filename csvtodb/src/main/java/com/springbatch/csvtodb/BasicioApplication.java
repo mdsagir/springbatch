@@ -1,4 +1,4 @@
-package com.springbatch.basicio;
+package com.springbatch.csvtodb;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

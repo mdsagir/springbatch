@@ -1,7 +1,7 @@
-package com.springbatch.basicio.config;
+package com.springbatch.csvtodb.config;
 
-import com.springbatch.basicio.model.Employee;
-import com.springbatch.basicio.processor.EmployeProcessor;
+import com.springbatch.csvtodb.model.Employee;
+import com.springbatch.csvtodb.processor.EmployeProcessor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;

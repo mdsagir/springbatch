@@ -1,4 +1,4 @@
-package com.springbatch.basicio.model;
+package com.springbatch.csvtodb.model;
 
 import lombok.Data;
 

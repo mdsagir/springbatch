@@ -1,4 +1,4 @@
-package com.springbatch.basicio.controller;
+package com.springbatch.csvtodb.controller;
 
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;

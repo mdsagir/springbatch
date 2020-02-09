@@ -1,14 +1,19 @@
-package com.springbatch.joblistener.config;
+package com.springbatch.steplistener.config;
 
-import com.springbatch.joblistener.listener.EmployeeJobListener;
-import com.springbatch.joblistener.model.Employee;
-import com.springbatch.joblistener.processor.EmployeProcessor;
+import com.springbatch.steplistener.listener.JobListener;
+import com.springbatch.steplistener.listener.ProcessListener;
+import com.springbatch.steplistener.listener.ReaderListener;
+import com.springbatch.steplistener.listener.WriterListener;
+import com.springbatch.steplistener.model.Employee;
+import com.springbatch.steplistener.policy.JobSkipPolicy;
+import com.springbatch.steplistener.processor.EmployeProcessor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -78,28 +83,56 @@ public class BatchConfig {
         return defaultLineMapper;
     }
 
+
     @Bean
     public Job job() throws Exception{
         return jobBuilderFactory.get("myFirstJob")
                 .incrementer(new RunIdIncrementer())
                 .start(step())
-                .listener(employeeJobListener())
+                .listener(jobListener())
                 .build();
     }
 
     @Bean
     public Step step() throws Exception{
-        return stepBuilderFactory.get("firstSteps").<Employee,Employee>chunk(1)
+        return stepBuilderFactory.get("firstSteps").<Employee,Employee>chunk(5)
                 .reader(employeeReader())
                 .processor(employeProcessor)
                 .writer(employeeWriter())
+                .faultTolerant()
+                .skipPolicy(jobSkipPolicy())
+                .listener(readerListener())
+                .listener(processListener())
+                .listener(writerListener())
                 .build();
     }
 
     @Bean
-    public EmployeeJobListener employeeJobListener(){
+    public JobSkipPolicy jobSkipPolicy(){
 
-        return new EmployeeJobListener();
+        return new JobSkipPolicy();
     }
 
+    @Bean
+    public ReaderListener readerListener(){
+        return new ReaderListener();
+    }
+
+    @Bean
+    public ProcessListener processListener(){
+        return new ProcessListener();
+    }
+
+    @Bean
+    public WriterListener writerListener(){
+        return new WriterListener();
+    }
+    @Bean
+    public ExecutionContext executionContext(){
+        return new ExecutionContext();
+    }
+    @Bean
+    public JobListener jobListener(){
+        return new JobListener();
+    }
 }

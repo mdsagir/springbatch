@@ -1,8 +1,7 @@
-package com.springbatch.skipfirstline.config;
+package com.springbatch.fixedlengthfile.config;
 
-import com.springbatch.skipfirstline.handler.SkipRecordCallback;
-import com.springbatch.skipfirstline.model.Employee;
-import com.springbatch.skipfirstline.processor.EmployeProcessor;
+import com.springbatch.fixedlengthfile.model.Employee;
+import com.springbatch.fixedlengthfile.processor.EmployeProcessor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -16,6 +15,8 @@ import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.file.transform.FixedLengthTokenizer;
+import org.springframework.batch.item.file.transform.Range;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,16 +41,12 @@ public class BatchConfig {
     @Autowired
     private DataSource dataSource;
 
-    @Autowired
-    private SkipRecordCallback skipRecordCallback;
-
     @Bean
     public FlatFileItemReader<Employee> employeeReader() throws Exception {
         FlatFileItemReader<Employee> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new FileSystemResource("src/main/resources/employees.csv"));
         flatFileItemReader.setName("CSV-Reader");
         flatFileItemReader.setLinesToSkip(1); //To skip first line
-        flatFileItemReader.setSkippedLinesCallback(skipRecordCallback);
         flatFileItemReader.setLineMapper(lineMapper());
         return flatFileItemReader;
     }
@@ -67,15 +64,19 @@ public class BatchConfig {
     @Bean
     public LineMapper<Employee> lineMapper() {
         DefaultLineMapper<Employee> defaultLineMapper = new DefaultLineMapper<>();
-        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+        FixedLengthTokenizer fixedLengthTokenizer=new FixedLengthTokenizer();
 
-        lineTokenizer.setDelimiter(",");
-        lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("employeeId", "firstName", "lastName", "email", "age");
+
         BeanWrapperFieldSetMapper<Employee> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
         fieldSetMapper.setTargetType(Employee.class);
 
-        defaultLineMapper.setLineTokenizer(lineTokenizer);
+
+        fixedLengthTokenizer.setNames("employeeId", "firstName", "lastName", "email", "age");
+        fixedLengthTokenizer.setColumns(new Range[]{new Range(1, 5), new Range(6, 10), new Range(11, 15), new Range(16, 30), new Range(31, 33)});
+        fixedLengthTokenizer.setStrict(false);
+
+
+        defaultLineMapper.setLineTokenizer(fixedLengthTokenizer);
         defaultLineMapper.setFieldSetMapper(fieldSetMapper);
 
         return defaultLineMapper;
